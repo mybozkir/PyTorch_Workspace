@@ -7,11 +7,13 @@ import torchvision
 from torchvision.datasets import ImageFolder
 
 import os
+import shutil
 from typing import Dict, List, Tuple
 from PIL import Image
 from pathlib import Path
 import random
 import matplotlib.pyplot as plt
+from zipfile import ZipFile
 
 def set_seeds():
     """ Sets seeds for torch operations.
@@ -96,8 +98,6 @@ def open_random_transformed_image(dataset: torchvision.datasets.folder.ImageFold
 ##########################################################################################################
 ##########################################################################################################
 
-# Let's create a function to plot loss and accuracy curves.
-
 def plot_loss_curves(results: Dict[str, List[float]]):
     """Plots loss and accuracy curves.
 
@@ -134,13 +134,28 @@ def plot_loss_curves(results: Dict[str, List[float]]):
     plt.xlabel("Epochs")
     plt.title("Accuracy Values")
     plt.legend();
-def create_tvs(data_path: Path):
-  """Creates subdirectories in data_path.
+
+##########################################################################################################
+##########################################################################################################
+
+def create_tvs(data_path: Path,
+               raw_data_path: Path,
+               ready_data_path: Path,
+               zip_file_path: Path,
+               train_dir: Path,
+               validation_dir: Path,
+               test_dir: Path,
+               train_ratio: float,
+               validation_ratio: float,
+               remove_zip: bool = False):
+  """Creates train, validation and test folders from raw zip file.
 
   This function creates directories for train, validation and test sets.
 
   Args:
     data_path (Path): Path to the data folder.
+    raw_data_path (Path): Path to unready data folder.
+    ready_data_path (Path): Path to ready data folder.
 
   Returns:
     None
@@ -152,14 +167,67 @@ def create_tvs(data_path: Path):
     print(f"{data_path} does not exist. Creating new one...")
     data_path.mkdir(parents = True, exist_ok = True)
     raw_data_path.mkdir(parents = True, exist_ok = True)
-    image_data_path.mkdir(parents = True, exist_ok = True)
+    ready_data_path.mkdir(parents = True, exist_ok = True)
 
-  # Create train, validation and test paths
-  train_path = data_path / "train"
-  validation_path = data_path / "validation"
-  test_path = data_path / "test"
-
-  for path in [train_path, validation_path, test_path]:
+  # Create train, validation and test directories
+  for path in [train_dir, validation_dir, test_dir]:
     path.mkdir(parents = True, exist_ok = True)
   
+  # Unzip the dataset
+  with ZipFile(file = zip_file_path, mode = "r") as zip_ref:
+    zip_ref.extractall(path = raw_data_path)
+
+  if remove_zip:
+    os.remove(zip_file_path)
+
+  for label in os.listdir(raw_data_path):
+    label_path = raw_data_path / label
+
+    # List and shuffle images
+    images = os.listdir(label_path)
+    random.shuffle(images)
+
+    # Determine set sizes
+    train_point = int(len(images) * train_ratio)
+    validation_point = int(len(images) * validation_ratio)
+    test_point = len(images) - train_point - validation_point
+
+    # Split the data
+    train_images = images[:train_point]
+    validation_images = images[train_point:train_point+validation_point]
+    test_images = images[train_point+validation_point:]
+
+    # Create train, validation and test folders with labels
+    for split, split_images in zip(['train', 'validation', 'test'], [train_images, validation_images, test_images]):
+      split_folder = os.path.join(ready_data_path, split, label)
+      print(f"[INFO] Creating {split_folder} folder...")
+      os.makedirs(split_folder, exist_ok = True)
+
+      # Copy images from source to target folder
+      for image in split_images:
+        source_path = os.path.join(label_path, image)
+        target_path = os.path.join(split_folder, image)
+        shutil.copy(source_path, target_path)
+
   print(f"Subdirectories created in {data_path}.")
+
+##########################################################################################################
+##########################################################################################################
+
+def mount_drive(config_path: Path = '/content/drive/MyDrive/Kaggle'):
+  """Mounts drive for Colab.
+  
+  Args:
+    config_path (Path | optional): Path to the Kaggle config folder.
+
+  Returns:
+    None
+  """
+  import os
+  from google.colab import drive
+
+  drive.mount('content/drive')
+
+  os.environ['KAGGLE_CONFIG_DIR'] = config_path
+
+  print("Drive folder has mounted.")
