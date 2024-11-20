@@ -134,3 +134,32 @@ def plot_loss_curves(results: Dict[str, List[float]]):
     plt.xlabel("Epochs")
     plt.title("Accuracy Values")
     plt.legend();
+def create_tvs(data_path: Path):
+  """Creates subdirectories in data_path.
+
+  This function creates directories for train, validation and test sets.
+
+  Args:
+    data_path (Path): Path to the data folder.
+
+  Returns:
+    None
+  """
+  # Creates data folder if does not exist.
+  if data_path.is_dir():
+    print(f"{data_path} already exists.")
+  else:
+    print(f"{data_path} does not exist. Creating new one...")
+    data_path.mkdir(parents = True, exist_ok = True)
+    raw_data_path.mkdir(parents = True, exist_ok = True)
+    image_data_path.mkdir(parents = True, exist_ok = True)
+
+  # Create train, validation and test paths
+  train_path = data_path / "train"
+  validation_path = data_path / "validation"
+  test_path = data_path / "test"
+
+  for path in [train_path, validation_path, test_path]:
+    path.mkdir(parents = True, exist_ok = True)
+  
+  print(f"Subdirectories created in {data_path}.")
