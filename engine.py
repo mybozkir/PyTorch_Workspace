@@ -6,6 +6,8 @@ from torch import nn
 from typing import Dict, Tuple, List
 from tqdm.auto import tqdm
 
+from torch.utils.tensorboard import SummaryWriter
+
 # Device-agnostic code
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -125,6 +127,8 @@ def train(model: nn.Module,
           loss_fn: nn.Module,
           optimizer: torch.optim.Optimizer,
           epochs: int,
+          writer: torch.utils.tensorboard.writer.SummaryWriter,
+          input_size: List,
           device: torch.device = device) -> Dict[str, List[float]]:
     """Training and testing for image classification.
 
@@ -134,7 +138,9 @@ def train(model: nn.Module,
         test_dataloader (torch.utils.data.DataLoader): DataLoader object for testing.
         optimizer (torch.optim.Optimizer): Optimizer object for training.
         loss_fn (nn.Module): Loss function.
+        writer (torch.utils.tensorbard.writer.SummaryWriter): SummaryWriter object.
         device (torch.device | optional): Device to be used during training and testing.
+        
     
     Returns:
         results(Dict[str, List[float]]): results dictionary contains loss and accuracy values for both training and testing.
@@ -175,6 +181,26 @@ def train(model: nn.Module,
         results['test_acc'].append(test_acc)
         results['train_loss'].append(train_loss)
         results['test_loss'].append(test_loss)
-    
+
+        # Set the summary writer
+        if writer:
+            # Add results to SummaryWriter
+            writer.add_scalars(main_tag = "Accuracy",
+                               tag_scalar_dict = {'train_acc' : train_acc,
+                                                  'test_acc' : test_acc},
+                                global_step = epoch)
+            
+            writer.add_scalars(main_tag = "Loss",
+                               tag_scalar_dict = {'train_loss' : train_loss,
+                                                  'test_loss' : test_loss},
+                                global_step = epoch)
+            
+            writer.add_graph(model = model,
+                             input_to_model = torch.randn(input_size))
+
+            writer.close()
+        else:
+            pass
+        
     # Return the results dict
     return results
