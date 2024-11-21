@@ -2,6 +2,7 @@
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 
 import torchvision
 from torchvision.datasets import ImageFolder
@@ -231,3 +232,37 @@ def mount_drive(config_path: Path = '/content/drive/MyDrive/Kaggle'):
   os.environ['KAGGLE_CONFIG_DIR'] = config_path
 
   print("Drive folder has mounted.")
+
+##########################################################################################################
+##########################################################################################################
+
+def create_writer(experiment_name: str,
+                  model_name: str,
+                  extra: str = None) -> torch.utils.tensorboard.writer.SummaryWriter:
+    """Creates a torch.utils.tensorboard.writer.SummaryWriter() instance saving to a specific log_dir.
+    
+    log_dir is a specific combination of runs/time_stamp/experiment_name/model_name/extra.
+
+    Args:
+      experiment_name (str): Name of experiment.
+      model_name (str): Name of model.
+      extra (str): Any extra information to add to the directory.
+
+    Returns:
+      torch.utils.tensorboard.writer.SummaryWriter(): Instance of a writer.
+
+    """
+    from datetime import datetime
+    import os
+
+    # Get timestamp of current date
+    timestamp = datetime.now().strftime("%Y-%m-%d")
+
+    if extra:
+      log_dir = os.path.join("runs", timestamp, experiment_name, model_name, extra)
+    else:
+      log_dir = os.path.join("runs", timestamp, experiment_name, model_name)
+
+    print(f"[INFO] Created SummaryWriter, saving to: {log_dir}...")
+    
+    return SummaryWriter(log_dir = log_dir)
