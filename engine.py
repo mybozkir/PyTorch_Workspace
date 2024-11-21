@@ -128,7 +128,6 @@ def train(model: nn.Module,
           optimizer: torch.optim.Optimizer,
           epochs: int,
           writer: torch.utils.tensorboard.writer.SummaryWriter,
-          input_size: List,
           device: torch.device = device) -> Dict[str, List[float]]:
     """Training and testing for image classification.
 
@@ -194,10 +193,6 @@ def train(model: nn.Module,
                                tag_scalar_dict = {'train_loss' : train_loss,
                                                   'test_loss' : test_loss},
                                 global_step = epoch)
-            
-            writer.add_graph(model = model,
-                             input_to_model = torch.randn(input_size))
-
             writer.close()
         else:
             pass
